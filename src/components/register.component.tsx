@@ -1,6 +1,8 @@
 import {useWalletConnect} from "../WalletConnectContext";
 import {getNonce, registerUser} from "../utils/request.util";
 import {getRegistrationMsg, signEIP721, verifyEIP712} from "../utils/eip721";
+import {getAccountId} from "../utils/common";
+import {environment} from "../enviroments/environment";
 
 export function RegisterComponent() {
     const {wallet} = useWalletConnect();
@@ -9,9 +11,10 @@ export function RegisterComponent() {
     const registration = async () => {
         try {
             const userAddress = wallet.accounts[0];
+            const accountId = getAccountId(userAddress, environment.brokerId)
             const chainId = parseInt(wallet.chainId);
 
-            const nonceRes = await getNonce(userAddress);
+            const nonceRes = await getNonce(accountId);
             console.log('nonceRes', nonceRes);
 
             const eip721Data = getRegistrationMsg('woofi_dex', chainId, nonceRes.data.registration_nonce);

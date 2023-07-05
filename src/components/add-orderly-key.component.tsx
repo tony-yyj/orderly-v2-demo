@@ -56,7 +56,7 @@ export function AddOrderlyKeyComponent() {
     }
     return (
 
-        <div>k
+        <div>
             <p>expiration(h): <input type='number' value={expireTime} onChange={onChangeExpireTime}/></p>
             <p>scope:
                 <select multiple onChange={onChangeScope} value={scope}>

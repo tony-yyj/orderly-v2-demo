@@ -7,6 +7,7 @@ export function getNonce(accountId: string) {
         headers: {
             'Content-Type': 'application/json',
             'charset': 'utf-8',
+            'accountId': accountId,
         },
     }).then(res => res.json())
 }
@@ -56,30 +57,3 @@ export function setOrderlyKey(params: any) {
             body: JSON.stringify(params),
         }).then(res => res.json())
 }
-
-interface ParamsInterface {
-    [key: string]: any;
-}
-
-type Params = ParamsInterface | null;
-
-const addQuery = (url: string, params?: Params) => {
-    // filter empty and null param
-    const urlParams: string[] = [];
-    if (params) {
-        for (const field of Object.keys(params)) {
-            if (params[field] === '' || params[field] === null) {
-                delete params[field];
-            } else {
-                urlParams.push(`${field}=${params[field]}`);
-            }
-        }
-    }
-
-    // 添加urlParams
-    if (urlParams.length) {
-        url = `${url}?${urlParams.join('&')}`;
-    }
-
-    return url;
-};

@@ -924,7 +924,7 @@ export const contracts: {[key: string]: {[key: string]: {address: string, abi:an
 
 }
 
-export const tokenHash ={
+export const tokenHash : {[key: string]: string}={
     "USDC": usdcHash,
     "ERC20": tErc20Hash
 }

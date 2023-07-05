@@ -88,6 +88,7 @@ export function getAddOrderlyKeyMsg(chainId: number, keyPair: any, scope: string
     }
 }
 
+
 export async function signEIP721(accountId: string, data: string) {
     const method = "eth_signTypedData_v4"
     const params = [accountId, data]

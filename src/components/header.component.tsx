@@ -21,12 +21,13 @@ export default function HeaderComponent() {
                 </button>
             }
 
-            {hasProvider && wallet.accounts.length &&
+            {hasProvider && wallet.accounts.length > 0 &&
                 <div>
 
                     {formatAddress(wallet.accounts[0])}
                 </div>
             }
+
 
 
         </div>

@@ -1,4 +1,5 @@
 import {ethers} from "ethers";
+import {environment} from "../enviroments/environment";
 
 const definedTypes: { [key: string]: any } = {
     "EIP712Domain": [
@@ -24,7 +25,6 @@ const definedTypes: { [key: string]: any } = {
     ],
     "AddOrderlyKey": [
         {name: "brokerId", type: "string"},
-        {name: "chainId", type: "uint256"},
         {name: "orderlyKey", type: "string"},
         {name: "scope", type: "string"},
         {name: "timestamp", type: "uint64"},
@@ -59,6 +59,31 @@ export function getRegistrationMsg(brokerId: string, chainId: number, registrati
         domain: getDomain(chainId),
         message: message,
         primaryType: 'Registration',
+        types: typeDefinition,
+    }
+}
+
+export function getAddOrderlyKeyMsg(chainId: number, keyPair: any, scope: string[], expireTime: number = 0) {
+    const primaryType = 'AddOrderlyKey';
+    const timestamp = new Date().getTime();
+
+    const expiration = expireTime === 0 ? 0 : timestamp + 3600 * 1000 * expireTime;
+    const typeDefinition = {
+        "EIP712Domain": definedTypes["EIP712Domain"],
+        [primaryType]: definedTypes[primaryType]
+    }
+    const message = {
+        "brokerId": environment.brokerId,
+        orderlyKey: keyPair.publicKey,
+        scope: scope.join(','),
+        "timestamp": timestamp,
+        expiration,
+    }
+
+    return {
+        domain: getDomain(chainId),
+        message: message,
+        primaryType,
         types: typeDefinition,
     }
 }

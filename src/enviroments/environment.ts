@@ -1,3 +1,4 @@
 export const environment = {
-    api: 'https://futures-api.orderly.network'
+    api: 'https://futures-api.orderly.network',
+    brokerId: 'woofi_dex',
 }

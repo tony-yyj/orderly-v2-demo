@@ -21,6 +21,17 @@ export function registerUser(params: any) {
     }).then(res => res.json())
 }
 
+export function setOrderlyKey(params: any) {
+    return fetch(environment.api + '/usercenter/v1/orderly_key',
+        {
+           method: 'POST',
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8',
+            },
+            body: JSON.stringify(params),
+        }).then(res => res.json())
+}
+
 interface ParamsInterface {
     [key: string]: any;
 }

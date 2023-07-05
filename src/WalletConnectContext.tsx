@@ -3,7 +3,7 @@ import detectEthereumProvider from "@metamask/detect-provider";
 
 export interface IWalletConnectContextValue {
     connectMetamask: () =>void;
-    wallet: Walletstate;
+    wallet: WalletState;
     hasProvider: boolean;
 }
 
@@ -11,7 +11,7 @@ interface IWalletConnectContextProviderProps {
     children: any;
 }
 
-interface Walletstate {
+interface WalletState {
     accounts: any[];
     balance: string;
     chainId: string;
@@ -20,7 +20,7 @@ interface Walletstate {
 export const WalletConnectContext = React.createContext<IWalletConnectContextValue | null>(null)
 
 
-const disconntedState: Walletstate = {
+const disconntedState: WalletState = {
     accounts: [],
     balance: '',
     chainId: '',
@@ -77,7 +77,7 @@ export const WalletConnectContextProvider = ({children}: IWalletConnectContextPr
             window.ethereum.removeListener('chainChanged', updateWalletAndAccount);
 
         }
-    })
+    }, [updateWallet, updateWalletAndAccount]);
 
     const connectMetamask = async () => {
         try {

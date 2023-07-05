@@ -1,5 +1,6 @@
 import {ethers} from "ethers";
 import {environment} from "../enviroments/environment";
+import {getVerifyingContract} from "./contract";
 
 const definedTypes: { [key: string]: any } = {
     "EIP712Domain": [
@@ -86,6 +87,45 @@ export function getAddOrderlyKeyMsg(chainId: number, keyPair: any, scope: string
         primaryType,
         types: typeDefinition,
     }
+}
+
+export function getWithdrawMsg(
+    userAddress: string,
+    accountId: string,
+    chainId: number,
+    token: string,
+    withdrawNonce: string,
+    amount: number,
+) {
+    const decimal = 6;
+    const primaryType = 'Withdraw';
+    const receiver = userAddress;
+    const timestamp = new Date().getTime();
+
+    const message = {
+        brokerId: environment.brokerId,
+        chainId,
+        receiver,
+        token,
+        amount: ethers.parseUnits(String(amount), decimal).toString(),
+        withdrawNonce,
+        timestamp,
+    }
+    const withdrawDomain = {    // only for withdraw EIP712 message
+        name: "Orderly",
+        version: "1",
+        chainId: 986532,
+        verifyingContract: getVerifyingContract(),
+    }
+    const typeDefinition = {"EIP712Domain": definedTypes["EIP712Domain"], [primaryType]: definedTypes[primaryType]}
+
+    return {
+        domain: withdrawDomain,
+        message: message,
+        primaryType: primaryType,
+        types: typeDefinition,
+    }
+
 }
 
 

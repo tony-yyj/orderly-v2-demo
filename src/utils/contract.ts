@@ -932,3 +932,8 @@ export const tokenHash : {[key: string]: string}={
 export const brokerHash = {
     "woofi_dex": "0x00"
 }
+
+export function getVerifyingContract(){
+    return "0x8c0c5eC263358FD55b63c69C6c39db7F6E499eCf"
+}
+

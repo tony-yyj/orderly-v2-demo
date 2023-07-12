@@ -3,8 +3,9 @@ import {ChangeEvent, useState} from "react";
 import {getAddOrderlyKeyMsg, signEIP721} from "../utils/eip721";
 import {useWalletConnect} from "../WalletConnectContext";
 import * as ed from '@noble/ed25519';
-import {ethers} from "ethers";
+import {decodeBase58, ethers, keccak256, toUtf8Bytes, toUtf8String} from "ethers";
 import {setOrderlyKey} from "../utils/request.util";
+import {accountId} from "../utils/contract";
 
 export function AddOrderlyKeyComponent() {
     const {wallet} = useWalletConnect();
@@ -30,23 +31,28 @@ export function AddOrderlyKeyComponent() {
         const pubKey = await ed.getPublicKeyAsync(privKey);
         const orderlyKeyPair = {
             publicKey: `ed25519:${ethers.encodeBase58(pubKey)}`,
-            privateKey: ethers.encodeBase58(privKey),
+            privateKey: Buffer.from(privKey).toString('hex'),
+
         }
+
+        const pubKeyCov = await ed.getPublicKeyAsync(orderlyKeyPair.privateKey); // Sync methods below
+
+        console.log({
+            pubKeyCov,
+            pubKey,
+        })
+
         const eip721Data = getAddOrderlyKeyMsg(chainId, orderlyKeyPair, scope, expireTime);
         const signature = await signEIP721(userAddress, JSON.stringify(eip721Data));
         let msg: {[key: string]: any} = {};
         for (const [key, value] of Object.entries(eip721Data.message)) {
-            if (key === 'chainId') {
-                continue;
-
-            }
             msg[key] = value;
         }
         setOrderlyKey({
             signature,
             userAddress,
             message:msg,
-        }).then(res => {
+        }, accountId).then(res => {
             localStorage.setItem('orderly_key_private', orderlyKeyPair.privateKey);
             console.log('set orderlyKey res', res);
         })

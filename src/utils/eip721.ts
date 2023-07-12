@@ -2,18 +2,27 @@ import {ethers} from "ethers";
 import {environment} from "../enviroments/environment";
 import {getVerifyingContract} from "./contract";
 
-const definedTypes: { [key: string]: any } = {
+
+const definedTypes = {
     "EIP712Domain": [
-        {name: "name", type: "string"},
-        {name: "version", type: "string"},
-        {name: "chainId", type: "uint256"},
-        {name: "verifyingContract", type: "address"},
+        { name: "name", type: "string" },
+        { name: "version", type: "string" },
+        { name: "chainId", type: "uint256" },
+        { name: "verifyingContract", type: "address" },
     ],
     "Registration": [
         {name: "brokerId", type: "string"},
         {name: "chainId", type: "uint256"},
         {name: "timestamp", type: "uint64"},
         {name: "registrationNonce", type: "uint256"}
+    ],
+    "AddOrderlyKey": [
+        {name: "brokerId", type: "string"},
+        {name: "chainId", type: "uint256"},
+        {name: "orderlyKey", type: "string"},
+        {name: "scope", type: "string"},
+        {name: "timestamp", type: "uint64"},
+        {name: "expiration", type: "uint64"},
     ],
     "Withdraw": [
         {name: "brokerId", type: "string"},
@@ -23,13 +32,6 @@ const definedTypes: { [key: string]: any } = {
         {name: "amount", type: "uint256"},
         {name: "withdrawNonce", type: "uint64"},
         {name: "timestamp", type: "uint64"},
-    ],
-    "AddOrderlyKey": [
-        {name: "brokerId", type: "string"},
-        {name: "orderlyKey", type: "string"},
-        {name: "scope", type: "string"},
-        {name: "timestamp", type: "uint64"},
-        {name: "expiration", type: "uint64"},
     ],
 }
 
@@ -76,6 +78,7 @@ export function getAddOrderlyKeyMsg(chainId: number, keyPair: any, scope: string
     const message = {
         "brokerId": environment.brokerId,
         orderlyKey: keyPair.publicKey,
+        chainId,
         scope: scope.join(','),
         "timestamp": timestamp,
         expiration,

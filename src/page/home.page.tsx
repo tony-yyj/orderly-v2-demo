@@ -5,6 +5,7 @@ import {ApproveTokenComponent} from "../components/approve-token.component";
 import {DepositComponent} from "../components/deposit.component";
 import {WithdrawComponent} from "../components/withdraw.component";
 import {useWalletConnect} from "../WalletConnectContext";
+import {WalletComponent} from "../components/wallet.component";
 
 export default function HomePage() {
     const {wallet} = useWalletConnect();
@@ -17,7 +18,7 @@ export default function HomePage() {
 
     return (
         <div>
-            <AccountComponent/>
+            <WalletComponent/>
             <hr/>
             <RegisterComponent/>
             <hr/>
@@ -28,6 +29,8 @@ export default function HomePage() {
             <DepositComponent/>
             <hr/>
             <WithdrawComponent/>
+            <hr/>
+            <AccountComponent/>
 
 
         </div>

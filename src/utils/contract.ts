@@ -934,6 +934,6 @@ export const brokerHash = {
 }
 
 export function getVerifyingContract(){
-    return "0x8c0c5eC263358FD55b63c69C6c39db7F6E499eCf"
+    return "0xD6BbDE9174b1CdAa358d2Cf4D57D1a9F7178FBfF"
 }
 

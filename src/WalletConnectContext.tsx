@@ -1,115 +1,162 @@
-import React, {useCallback, useContext, useEffect, useMemo, useState} from "react";
-import detectEthereumProvider from "@metamask/detect-provider";
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { EIP1193Provider } from '@web3-onboard/common';
+import { OnboardAPI, WalletState } from '@web3-onboard/core';
+import { init, useConnectWallet, useSetChain, useWallets } from '@web3-onboard/react';
+import { toNumber } from 'ethers';
+import Web3 from 'web3';
 
 export interface IWalletConnectContextValue {
-    connectMetamask: () =>void;
-    wallet: WalletState;
-    hasProvider: boolean;
+    userAddress: string | null;
+    chainId: string | null;
+    provider: EIP1193Provider | null;
+    walletLabel: string | null;
+    web3: Web3 | null;
+    disconnectWallet: () => Promise<WalletState[] | null>;
+    connect: () => Promise<WalletState[] | null>;
+    changeChain: (chainId: string) => Promise<any>;
 }
 
 interface IWalletConnectContextProviderProps {
     children: any;
+    onboard?: OnboardAPI;
 }
 
-interface WalletState {
-    accounts: any[];
-    balance: string;
-    chainId: string;
-}
+const defaultContextValue: IWalletConnectContextValue = {
+    userAddress: null,
+    chainId: null,
+    provider: null,
+    walletLabel: null,
+    web3: null,
+    disconnectWallet: async () => null,
+    connect: async () => null,
+    changeChain: async () => null,
+};
 
-export const WalletConnectContext = React.createContext<IWalletConnectContextValue | null>(null)
+export const WalletConnectContext = React.createContext<IWalletConnectContextValue | null>(defaultContextValue);
 
+let timeoutId: number | null = null;
 
-const disconntedState: WalletState = {
-    accounts: [],
-    balance: '',
-    chainId: '',
-}
+export const WalletConnectContextProvider = ({ children, onboard }: IWalletConnectContextProviderProps) => {
+    const [userAddress, setUserAddress] = useState<string | null>(null);
+    const [chainId, setChainId] = useState<string | null>(null);
+    const [provider, setProvider] = useState<EIP1193Provider | null>(null);
+    const [walletLabel, setWalletLabel] = useState<string | null>(null);
+    const [web3, setWeb3] = useState<Web3 | null>(null);
 
-export const WalletConnectContextProvider = ({children}: IWalletConnectContextProviderProps) => {
-    const [wallet, setWallet] = useState(disconntedState);
-    const [hasProvider, setHasProvider] = useState<boolean>(false);
+    const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
+    const [{ connectedChain }, setChain] = useSetChain();
+    const connectedWallets = useWallets();
 
-
-    const _updateWallet = useCallback(async (providedAccounts?: any) => {
-        const accounts = providedAccounts || await window.ethereum.request(
-            {method: 'eth_accounts'},
-        )
-        if (accounts.length === 0) {
-            setWallet(disconntedState);
-            return;
+    const disconnectWallet = useCallback(async (): Promise<WalletState[] | null> => {
+        if (!wallet) {
+            return null;
         }
+        return disconnect(wallet);
+    }, [wallet]);
 
-        const chainId = await window.ethereum.request({
-            method: 'eth_chainId',
-        });
-
-        const balance = await window.ethereum.request({
-            method: 'eth_getBalance',
-            params: [accounts[0], 'latest'],
-        })
-        setWallet({
-            accounts,
-            chainId,
-            balance,
-        })
-    }, [])
-
-    const updateWalletAndAccount = useCallback(() => _updateWallet(), [_updateWallet]);
-    const updateWallet = useCallback((accounts: any) => _updateWallet(accounts), [_updateWallet])
+    const changeChain = useCallback(
+        (chainId: string) => {
+            return setChain({ chainId });
+        },
+        [setChain],
+    );
 
     useEffect(() => {
-        const getProvider = async () => {
-            const provider = await detectEthereumProvider({silent: true});
-            setHasProvider(Boolean(provider));
-            if (provider) {
-                updateWalletAndAccount().then();
-                window.ethereum.on('accountChanged', updateWallet);
-                window.ethereum.on('chainChanged', updateWalletAndAccount);
+        // can get change chain event
+        if (connectedChain) {
+            setChainId(toNumber(connectedChain.id).toString());
+        }
+    }, [connectedChain]);
+
+    useEffect(() => {
+        const throttleTime = 1000;
+
+        const throttleFunction = () => {
+            console.log('-- zhixing ----');
+            console.log('wallet', wallet);
+            console.log('-- connectedWallets', connectedWallets);
+            if (!wallet) {
+
+                bindProviderEvent(provider, true);
+                setUserAddress(null);
+                setChainId(null);
+                setProvider(null);
+                setWalletLabel(null);
+                setWeb3(null);
+                return;
+            }
+            if (wallet) {
+                const currentWallet = {
+                    provider: wallet.provider,
+                    address: wallet.accounts[0].address,
+                    label: wallet.label,
+                    chainId: wallet.chains[0].id,
+                };
+
+                if (walletLabel !== currentWallet.label) {
+                    setProvider(currentWallet.provider);
+                    bindProviderEvent(currentWallet.provider);
+                }
+                setUserAddress(currentWallet.address);
+                setChainId(currentWallet.chainId);
+                setWalletLabel(currentWallet.label);
+                // @ts-ignore
+                setWeb3(new Web3(currentWallet.provider));
+                console.log('userAddress', userAddress, currentWallet);
+
+            }
+        };
+
+        const handleUpdate = () => {
+            console.log('-- time', timeoutId, new Date().getTime(), wallet);
+            if (timeoutId) {
+                window.clearTimeout(timeoutId);
             }
 
+            timeoutId = window.setTimeout(throttleFunction, throttleTime);
+        };
+
+        handleUpdate();
+    }, [wallet]);
+
+    const onAccountsChanged = (accounts: string[]) => {
+    };
+
+    const bindProviderEvent = (provider: EIP1193Provider | null, isClear?: boolean) => {
+        if (!provider) {
+            return;
         }
+        // provider.removeListener('chainChanged', this.handleChainChanged)
+        provider.removeListener('accountsChanged', onAccountsChanged);
+        // provider.removeListener('close', this.handleClose)
+        // provider.removeListener('handleNetworkChanged', this.handleNetworkChanged)
 
-        getProvider().then();
-
-        return () => {
-            window.ethereum.removeListener('accountChanged', updateWallet);
-            window.ethereum.removeListener('chainChanged', updateWalletAndAccount);
-
+        if (isClear) {
+            return;
         }
-    }, [updateWallet, updateWalletAndAccount]);
-
-    const connectMetamask = async () => {
-        try {
-            const accounts = await window.ethereum.request({
-                method: 'eth_requestAccounts',
-            })
-            updateWallet(accounts);
-        } catch (e) {
-            console.log('e', e);
-        }
+        provider.on('accountsChanged', onAccountsChanged);
     };
 
     const providerValue = useMemo(
         () => ({
-            connectMetamask,
-            wallet,
-            hasProvider,
+            userAddress,
+            chainId,
+            walletLabel,
+            provider,
+            disconnectWallet,
+            connect,
+            changeChain,
+            web3,
         }),
-        [wallet, hasProvider, connectMetamask],
+        [userAddress, chainId, walletLabel, provider, disconnectWallet, connect, changeChain, web3],
     );
-    return (
-        <WalletConnectContext.Provider value={providerValue}>
-            {children}
-        </WalletConnectContext.Provider>
-    )
-}
+    return <WalletConnectContext.Provider value={providerValue}>{children}</WalletConnectContext.Provider>;
+};
 
 export function useWalletConnect() {
     const context = useContext(WalletConnectContext);
     if (!context) {
-        throw new Error('useWalletConnect must be used within a WalletConnectProvider')
+        throw new Error('useWalletConnect must be used within a WalletConnectProvider');
     }
     return context;
-
 }

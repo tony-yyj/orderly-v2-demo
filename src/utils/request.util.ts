@@ -3,7 +3,7 @@ import * as ed from '@noble/ed25519';
 import {decodeBase58, ethers} from "ethers";
 
 export function getNonce(accountId: string) {
-    const url = environment.api + '/v1/registration_nonce';
+    const url = environment.config.api + '/v1/registration_nonce';
     return fetch(url, {
         method: 'GET',
         headers: {
@@ -15,7 +15,7 @@ export function getNonce(accountId: string) {
 }
 
 export function getWithdrawNonce(accountId: string) {
-    const url = environment.api + '/balance/user/withdraw_nonce';
+    const url = environment.config.api + '/balance/user/withdraw_nonce';
     return fetch(url, {
         method: 'GET',
         headers: {
@@ -27,7 +27,7 @@ export function getWithdrawNonce(accountId: string) {
 }
 
 export function withdrawToken(accountId: string, params: any) {
-    return fetch(environment.api + '/balance/user/withdraw_request', {
+    return fetch(environment.config.api + '/balance/user/withdraw_request', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -40,7 +40,7 @@ export function withdrawToken(accountId: string, params: any) {
 }
 
 export function registerUser(params: any) {
-    return fetch(environment.api + '/v1/orderly_user', {
+    return fetch(environment.config.api + '/v1/orderly_user', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json;charset=utf-8',
@@ -50,7 +50,7 @@ export function registerUser(params: any) {
 }
 
 export function setOrderlyKey(params: any, accountId: string) {
-    return fetch(environment.api + '/v1/orderly_key',
+    return fetch(environment.config.api + '/v1/orderly_key',
         {
             method: 'POST',
             headers: {
@@ -62,7 +62,7 @@ export function setOrderlyKey(params: any, accountId: string) {
 }
 
 export const get = (url: string, headers: any, params: any) => {
-   return requestMethod(environment.api + url, 'GET', params, headers);
+   return requestMethod(environment.config.api + url, 'GET', params, headers);
 }
 
 const base64url = function (aStr: string): string {

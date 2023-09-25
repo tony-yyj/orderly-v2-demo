@@ -1,17 +1,31 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import './App.css';
-import {WalletConnectContextProvider} from "./WalletConnectContext";
 import HomePage from "./page/home.page";
-import HeaderComponent from "./components/header.component";
+import {WalletConnectContextProvider} from "./WalletConnectContext";
+import {OnboardAPI} from "@web3-onboard/core";
+import {init} from "@web3-onboard/react";
+import {initBlockNativeData} from "./utils/block-native.util";
+import {Provider} from "react-redux";
+import store from "./store/store";
+import {WooFiSwapSupport} from "./services/common.service";
+
 
 function App() {
+
+    WooFiSwapSupport().subscribe();
+
+    useEffect(() => {
+        const onboard = init(initBlockNativeData);
+
+    }, []);
+
     return (
         <div className="App">
-            <WalletConnectContextProvider>
-                <HeaderComponent/>
-                <HomePage/>
-
-            </WalletConnectContextProvider>
+            <Provider store={store}>
+                <WalletConnectContextProvider>
+                    <HomePage/>
+                </WalletConnectContextProvider>
+            </Provider>
         </div>
     );
 }

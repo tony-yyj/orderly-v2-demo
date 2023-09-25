@@ -76,7 +76,7 @@ export function getAddOrderlyKeyMsg(chainId: number, keyPair: any, scope: string
         [primaryType]: definedTypes[primaryType]
     }
     const message = {
-        "brokerId": environment.brokerId,
+        "brokerId": environment.config.brokerId,
         orderlyKey: keyPair.publicKey,
         chainId,
         scope: scope.join(','),
@@ -106,7 +106,7 @@ export function getWithdrawMsg(
     const timestamp = new Date().getTime();
 
     const message = {
-        brokerId: environment.brokerId,
+        brokerId: environment.config.brokerId,
         chainId,
         receiver,
         token,

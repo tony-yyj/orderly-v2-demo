@@ -24,7 +24,7 @@ export async function signApprove(chainId: number, tokenSymbol: string, vaultSym
 export async function signDeposit(accountId: string, chainId: number, tokenSymbol: string, vaultSymbol: string, tokenAmount: number) {
     try {
 
-        const brokerHash = calculateStringHash(environment.brokerId);
+        const brokerHash = calculateStringHash(environment.config.brokerId);
 
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();

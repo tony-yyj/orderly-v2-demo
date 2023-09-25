@@ -1,33 +1,26 @@
-import React from "react";
-import {useWalletConnect} from "../WalletConnectContext";
+import React, {useEffect} from "react";
 import {formatAddress} from "../utils/common";
+import {useWalletConnect} from "../WalletConnectContext";
 
 export default function HeaderComponent() {
-    const {wallet, hasProvider, connectMetamask} = useWalletConnect();
+    const {userAddress, connect} = useWalletConnect();
 
 
     return (
         <div>
-            {!hasProvider &&
-                <a href="https://metamask.io" target="_blank">
-                    Install MetaMask
-                </a>
-            }
 
-            {window.ethereum?.isMetaMask && !wallet.accounts.length &&
+            {userAddress ?
 
-                <button onClick={connectMetamask}>
-                    Connect wallet
-                </button>
-            }
 
-            {hasProvider && wallet.accounts.length > 0 &&
                 <div>
 
-                    {formatAddress(wallet.accounts[0])}
+                    {formatAddress(userAddress)}
                 </div>
+                :
+                <button onClick={() => connect()}>
+                    connect wallet
+                </button>
             }
-
 
 
         </div>

@@ -1,10 +1,11 @@
-import {ethers, parseUnits} from "ethers";
+import {ethers, MaxUint256, parseUnits} from "ethers";
 import {contracts} from "../utils/contract";
 import {calculateStringHash, getAccountId} from "../utils/common";
 import {environment} from "../enviroments/environment";
 import {CrossSwapResponseInterface, ICrossChainContractAbi} from "../interfaces/contract.interface";
 import Web3 from "web3";
 import crossChainRouterAbi from '../utils/woofiDexCrossChainRouterAbi.json';
+import erc20Abi from "../utils/erc20Abi.json";
 
 const GASLIMIT = '3000000';
 const TIME_OUT = 60 * 60 * 1000;
@@ -118,4 +119,22 @@ export async function crossChainSwapDeposit(
         return new Error(e && e.message);
 
     }
+}
+
+export async function approveERC20Token(userAddress: string, web3: Web3) {
+    const erc20Contract = new web3.eth.Contract(erc20Abi, '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA');
+    // @ts-ignore;
+    const txData = erc20Contract.methods.approve(environment.config.crossChainRouteAddress, MaxUint256.toString()).encodeABI();
+    // @ts-ignore;
+    erc20Contract.methods.approve(environment.config.crossChainRouteAddress, MaxUint256.toString()).send({
+        from: userAddress,
+        // @ts-ignore
+        gasPrice: await web3.eth.getGasPrice(),
+        gasLimit: GASLIMIT,
+        data: txData,
+        value: '0',
+        timeout: TIME_OUT,
+    }).then(res => {
+        console.log(res);
+    })
 }

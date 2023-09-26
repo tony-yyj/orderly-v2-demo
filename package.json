@@ -21,6 +21,7 @@
     "bs58": "^5.0.0",
     "buffer": "^6.0.3",
     "ethers": "^6.6.2",
+    "loadash": "^1.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-redux": "^8.1.2",
@@ -54,5 +55,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.199"
   }
 }

@@ -293,6 +293,28 @@ const networkConfig: {[key: string]: NetworkConfigInterface} = {
         requestRpc: 'https://goerli-rollup.arbitrum.io/rpc',
         chainLogo: '',
     },
+    bsc_testnet: {
+        chainInfo: {
+            chainId: `0x${(97).toString(16)}`,
+            chainName: 'BNB Chain Testnet',
+            nativeCurrency: {
+                name: 'BNB',
+                symbol: 'BNB',
+                decimals: 18,
+                fix: 4,
+            },
+            rpcUrls: ["https://data-seed-prebsc-1-s1.bnbchain.org:8545"],
+            blockExplorerUrls: ['https://testnet.bscscan.com/'],
+        },
+        minGasBalance: 0.0002,
+        minCrossGasBalance: 0.002,
+        maxPrepayCrossGas: 0.03,
+        blockExplorerName: 'Base',
+        chainName: 'BNB Chain Testnet',
+        chainNameShort: 'BNB Chain Testnet',
+        requestRpc: 'https://data-seed-prebsc-1-s1.bnbchain.org:8545',
+        chainLogo: '',
+    }
 };
 
 export interface NetworkInterface {

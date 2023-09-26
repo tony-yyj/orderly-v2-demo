@@ -13,7 +13,7 @@ const woofiSwapSlice = createSlice({
     initialState: initState,
     reducers: {
         setSwapSupport: (state, action: PayloadAction<SwapSupportInterface>) => {
-            return action.payload || {};
+            state.swapSupport = action.payload ;
         }
     },
 })

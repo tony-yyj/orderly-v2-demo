@@ -8,11 +8,13 @@ import {initBlockNativeData} from "./utils/block-native.util";
 import {Provider} from "react-redux";
 import store from "./store/store";
 import {WooFiSwapSupport} from "./services/common.service";
+import {getTokenList} from "./services/asset.service";
 
 
 function App() {
 
     WooFiSwapSupport().subscribe();
+    getTokenList().subscribe();
 
     useEffect(() => {
         const onboard = init(initBlockNativeData);

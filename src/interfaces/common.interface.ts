@@ -10,7 +10,7 @@ export interface SwapNetworkInfoInterface {
 export interface SwapTokenInfoInterface {
     address: string;
     symbol: string;
-    decimal: number;
+    decimals: number;
     swap_enable: boolean;
 }
 

@@ -1,44 +1,57 @@
-import {ethers} from "ethers";
-import {contracts, tokenHash} from "../utils/contract";
-import {calculateStringHash} from "../utils/common";
+import {ethers, parseUnits} from "ethers";
+import {contracts} from "../utils/contract";
+import {calculateStringHash, getAccountId} from "../utils/common";
 import {environment} from "../enviroments/environment";
 
-export async function signApprove(chainId: number, tokenSymbol: string, vaultSymbol: string, tokenAmount: number) {
-    try {
 
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const contractInfo = contracts[chainId][tokenSymbol];
-        const tokenContract = new ethers.Contract(contractInfo.address, contractInfo.abi, signer);
-        const decimal = 6;
-        const vaultAddress = contracts[chainId][vaultSymbol].address;
-        const receipt = await tokenContract.approve(vaultAddress, ethers.parseUnits(String(tokenAmount), decimal))
-        console.log('receipt', receipt);
-
-    } catch (e) {
-        console.log(e);
+export async function crossChainSwapDeposit(
+    {
+        userAddress,
+        srcBridgeAmount,
+        slippage,
+        src,
+        dst,
+    }: {
+        userAddress: string
+        srcBridgeAmount: string,
+        slippage: string;
+        src: {
+            network: string;
+            token: string;
+            decimal: string;
+        },
+        dst: {
+            network: string;
+            token: string;
+        };
     }
-}
-
-
-export async function signDeposit(accountId: string, chainId: number, tokenSymbol: string, vaultSymbol: string, tokenAmount: number) {
-    try {
-
-        const brokerHash = calculateStringHash(environment.config.brokerId);
-
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const contractInfo = contracts[chainId][vaultSymbol];
-        const vaultContract= new ethers.Contract(contractInfo.address, contractInfo.abi, signer);
-        const decimal = 6;
-
-        // const receipt = await vaultContract.deposit(accountId, brokerHash, calculateStringHash(tokenSymbol), ethers.parseUnits(String(tokenAmount), decimal) )
-        // 老合约用老hash
-        const receipt = await vaultContract.deposit(accountId, brokerHash, tokenHash[tokenSymbol], ethers.parseUnits(String(tokenAmount), decimal) )
-        console.log('receipt', receipt);
-
-
-    } catch (e) {
-        console.log(e);
+) {
+    // dst value
+    const brokerHash = calculateStringHash(environment.config.brokerId);
+    // det woofipro token
+    const tokenHash = calculateStringHash('USDC');
+    const accountId = getAccountId(userAddress, environment.config.brokerId);
+    const dstVaultDepoist = {
+        accountId,
+        brokerHash,
+        tokenHash,
+    };
+    console.log('src', src);
+    const bridgeAmount = parseUnits(srcBridgeAmount,Number(src.decimal));
+    const queryParams = {
+        src_network:src.network,
+        dst_network:dst.network,
+        src_token:src.token,
+        dst_token: dst.token,
+        src_amount: bridgeAmount.toString(),
+        slippage: slippage,
     }
+    const queryString = Object.entries(queryParams)
+        .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+        .join('&');
+
+    console.log('queryString', queryString);
+    const url = `${environment.config.swapSupportApiUrl}/woofi_dex/cross_chain_swap?${queryString}`;
+    const priceData = fetch(url).then(response => response.json());
+    console.log('price data', priceData);
 }

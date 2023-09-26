@@ -6,6 +6,7 @@ import {CrossSwapResponseInterface, ICrossChainContractAbi} from "../interfaces/
 import Web3 from "web3";
 import crossChainRouterAbi from '../utils/woofiDexCrossChainRouterAbi.json';
 import erc20Abi from "../utils/erc20Abi.json";
+import {getRegistrationMsg, signEIP712} from "../utils/eip712.util";
 
 const GASLIMIT = '3000000';
 const TIME_OUT = 60 * 60 * 1000;
@@ -137,4 +138,12 @@ export async function approveERC20Token(userAddress: string, web3: Web3) {
     }).then(res => {
         console.log(res);
     })
+}
+
+export async function signMessage(userAddress: string, web3: Web3, chainId: string) {
+    const eip712Data = getRegistrationMsg(environment.config.brokerId, parseInt(chainId), 44);
+    console.log('eip723Data', eip712Data);
+
+    const signature = await signEIP712(web3, userAddress, eip712Data);
+
 }

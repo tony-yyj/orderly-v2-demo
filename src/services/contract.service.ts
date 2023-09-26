@@ -2,17 +2,23 @@ import {ethers, parseUnits} from "ethers";
 import {contracts} from "../utils/contract";
 import {calculateStringHash, getAccountId} from "../utils/common";
 import {environment} from "../enviroments/environment";
+import {CrossSwapResponseInterface, ICrossChainContractAbi} from "../interfaces/contract.interface";
+import Web3 from "web3";
+import crossChainRouterAbi from '../utils/woofiDexCrossChainRouterAbi.json';
 
-
+const GASLIMIT = '3000000';
+const TIME_OUT = 60 * 60 * 1000;
 export async function crossChainSwapDeposit(
     {
         userAddress,
+        web3,
         srcBridgeAmount,
         slippage,
         src,
         dst,
     }: {
         userAddress: string
+        web3: Web3,
         srcBridgeAmount: string,
         slippage: string;
         src: {
@@ -26,6 +32,9 @@ export async function crossChainSwapDeposit(
         };
     }
 ) {
+
+    try {
+
     // dst value
     const brokerHash = calculateStringHash(environment.config.brokerId);
     // det woofipro token
@@ -52,6 +61,61 @@ export async function crossChainSwapDeposit(
 
     console.log('queryString', queryString);
     const url = `${environment.config.swapSupportApiUrl}/woofi_dex/cross_chain_swap?${queryString}`;
-    const priceData = fetch(url).then(response => response.json());
+    const priceData =  await fetch(url).then(response => response.json()) as CrossSwapResponseInterface;
+    if (priceData.status !== 'ok'){
+        throw(new Error(priceData.error.message))
+    }
     console.log('price data', priceData);
+
+    const crossChainRouterContract = new web3.eth.Contract(crossChainRouterAbi as unknown as ICrossChainContractAbi, environment.config.crossChainRouteAddress);
+    const srcInfos = ({
+        fromToken: priceData.data.src_infos.from_token,
+        fromAmount: BigInt(priceData.data.src_infos.from_amount),
+        bridgeToken: priceData.data.src_infos.bridge_token,
+        minBridgeAmount: BigInt(priceData.data.src_infos.min_bridge_amount),
+    });
+    const dstInfos = ({
+        chainId: priceData.data.dst_infos.chain_id,
+        bridgedToken: priceData.data.dst_infos.bridged_token,
+        toToken: priceData.data.dst_infos.to_token,
+        minToAmount: BigInt(priceData.data.dst_infos.min_to_amount),
+        airdropNativeAmount: BigInt(0),
+    });
+
+    //
+    // const quotoLZFee = await crossChainRouterContract.methods.quoteLayerZeroFee(
+    //     userAddress,
+    //     dstInfos,
+    //     (dstVaultDepoist)
+    // ).call();
+    // console.log('quotoLZFee', quotoLZFee);
+    const txData = crossChainRouterContract.methods.crossSwap(
+        userAddress,
+        srcInfos,
+        dstInfos,
+        (dstVaultDepoist),
+    ).encodeABI();
+
+    const crossSwapResult = await crossChainRouterContract.methods.crossSwap(
+       userAddress,
+       srcInfos,
+       dstInfos,
+        (dstVaultDepoist),
+    ).send({
+        from: userAddress,
+        // @ts-ignore
+        gasPrice: await web3.eth.getGasPrice(),
+        gasLimit: GASLIMIT,
+        data: txData,
+        value: '0',
+        timeout: TIME_OUT,
+    });
+
+    console.log('cross swap result', crossSwapResult);
+
+    }catch (e: any) {
+        console.log('e', e);
+        return new Error(e && e.message);
+
+    }
 }

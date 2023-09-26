@@ -5,12 +5,13 @@ import {SwapTokenInfoInterface} from "../interfaces/common.interface";
 import {crossChainSwapDeposit} from "../services/contract.service";
 
 const TokenInfoItem = ({tokenInfo}: {tokenInfo: SwapTokenInfoInterface}) => {
-    const {userAddress} = useWalletConnect();
+    const {userAddress, web3} = useWalletConnect();
     const swapDeposit = () => {
-        if (!userAddress) {
+        if (!userAddress || !web3) {
             return;
         }
         crossChainSwapDeposit({
+            web3,
             userAddress,
             srcBridgeAmount: '0.2',
             slippage: '1.5',

@@ -4,6 +4,7 @@ import useSwapSupport from "../hooks/useSwapSupport";
 import {useWalletConnect} from "../WalletConnectContext";
 import {getNetworkByChainId} from "../utils/network.util";
 import {convertChainIdNumberToHex} from "../utils/common.util";
+import {Box} from "@mui/material";
 export interface NetWorkInterface {
     name: string;
     chainId: number;
@@ -47,7 +48,7 @@ export default function Network(){
     }, [swapSupport, tokenList]);
 
     return (
-        <div>
+        <Box sx={{width: '400px', border: '1px solid #ccc'}}>
             <h2>Mainnet</h2>
             {mainnet.map((net) => (
                 <NetworkItem key={net.chainId} net={net} />
@@ -56,6 +57,6 @@ export default function Network(){
             {testnet.map((net) => (
                     <NetworkItem key={net.chainId} net={net} />
             ))}
-        </div>
+        </Box>
     )
 }

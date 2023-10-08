@@ -3,43 +3,13 @@ import {useAppSelector} from "../store/store";
 import {useEffect, useState} from "react";
 import {SwapTokenInfoInterface} from "../interfaces/common.interface";
 import {crossChainSwapDeposit} from "../services/contract.service";
+import {Box} from "@mui/material";
+import TokenList from "./TokenList";
 
-const TokenInfoItem = ({tokenInfo}: {tokenInfo: SwapTokenInfoInterface}) => {
-    const {userAddress, web3} = useWalletConnect();
-    const swapDeposit = () => {
-        if (!userAddress || !web3) {
-            return;
-        }
-        crossChainSwapDeposit({
-            web3,
-            userAddress,
-            srcBridgeAmount: '0.2',
-            slippage: '1.5',
-            src: {
-                network: 'base',
-                token: tokenInfo.address,
-                decimal: tokenInfo.decimals.toString(),
-            },
-            dst: {
-                network: 'arbitrum',
-                token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
-            }
-        }).then();
 
-    };
-    return (
-        <p>
-            {tokenInfo.address}
-            &nbsp;
-            {tokenInfo.symbol}
-            <button onClick={swapDeposit}>Swap Deposit</button>
-        </p>
-    )
-
-}
-
-export default function CurrentChain(){
+export default function CurrentChain() {
     const {chainId} = useWalletConnect();
+    const [networkId, setnetworkId] = useState<string | null>(null);
     const [tokenInfoList, setTokenInfoList] = useState<SwapTokenInfoInterface[]>([]);
     const swapSupport = useAppSelector(state => state.woofiSwap.swapSupport);
     useEffect(() => {
@@ -48,21 +18,20 @@ export default function CurrentChain(){
             return;
         }
         Object.keys(swapSupport).forEach(key => {
-             if (swapSupport[key].network_infos.chain_id === parseInt(chainId)) {
-                 const tokenInfos = swapSupport[key].token_infos;
-                 setTokenInfoList(tokenInfos.filter(item => item.swap_enable));
-             }
+            if (swapSupport[key].network_infos.chain_id === parseInt(chainId)) {
+                const tokenInfos = swapSupport[key].token_infos;
+                setTokenInfoList(tokenInfos.filter(item => item.swap_enable));
+                setnetworkId(key);
+            }
         })
 
     }, [swapSupport, chainId]);
 
-    return(
-        <div>
-            <p>current chain id: {chainId}</p>
-                {tokenInfoList.map(tokenInfo =>
-                    <TokenInfoItem key={tokenInfo.address} tokenInfo={tokenInfo}/>
-                )}
+    return (
+        <Box sx={{width: '800px', border: '1px solid #ccc', padding: '10px'}}>
+            <p>current chain id: {chainId}, network: {networkId}</p>
+            <TokenList tokenList={tokenInfoList} networkId={networkId}/>
 
-        </div>
+        </Box>
     )
 }

@@ -7,6 +7,8 @@ import Web3 from "web3";
 import crossChainRouterAbi from '../utils/woofiDexCrossChainRouterAbi.json';
 import erc20Abi from "../utils/erc20Abi.json";
 import {getRegistrationMsg, signEIP712} from "../utils/eip712.util";
+import {ERC20AbiInterface} from "../interfaces/abi.interface";
+import {createClient, getMessagesBySrcTxHash} from "@layerzerolabs/scan-client";
 
 const GASLIMIT = '3000000';
 const TIME_OUT = 60 * 60 * 1000;
@@ -84,13 +86,13 @@ export async function crossChainSwapDeposit(
         airdropNativeAmount: BigInt(0),
     });
 
-    //
-    // const quotoLZFee = await crossChainRouterContract.methods.quoteLayerZeroFee(
-    //     userAddress,
-    //     dstInfos,
-    //     (dstVaultDepoist)
-    // ).call();
-    // console.log('quotoLZFee', quotoLZFee);
+
+    const quotoLZFee = await crossChainRouterContract.methods.quoteLayerZeroFee(
+        userAddress,
+        dstInfos,
+        (dstVaultDepoist)
+    ).call();
+    console.log('quotoLZFee', quotoLZFee);
     const txData = crossChainRouterContract.methods.crossSwap(
         userAddress,
         srcInfos,
@@ -109,7 +111,7 @@ export async function crossChainSwapDeposit(
         gasPrice: await web3.eth.getGasPrice(),
         gasLimit: GASLIMIT,
         data: txData,
-        value: '0',
+        value: quotoLZFee[0].toString(),
         timeout: TIME_OUT,
     });
 
@@ -122,12 +124,10 @@ export async function crossChainSwapDeposit(
     }
 }
 
-export async function approveERC20Token(userAddress: string, web3: Web3) {
-    const erc20Contract = new web3.eth.Contract(erc20Abi, '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA');
-    // @ts-ignore;
+export async function approveERC20Token(userAddress: string, web3: Web3, tokenAddress: string) {
+    const erc20Contract = new web3.eth.Contract(erc20Abi as unknown as ERC20AbiInterface , tokenAddress);
     const txData = erc20Contract.methods.approve(environment.config.crossChainRouteAddress, MaxUint256.toString()).encodeABI();
-    // @ts-ignore;
-    erc20Contract.methods.approve(environment.config.crossChainRouteAddress, MaxUint256.toString()).send({
+    return erc20Contract.methods.approve(environment.config.crossChainRouteAddress, MaxUint256.toString()).send({
         from: userAddress,
         // @ts-ignore
         gasPrice: await web3.eth.getGasPrice(),
@@ -146,4 +146,18 @@ export async function signMessage(userAddress: string, web3: Web3, chainId: stri
 
     const signature = await signEIP712(web3, userAddress, eip712Data);
 
+}
+
+
+export async function getCrossSwapStatus(transactionHash: string) {
+    const client = createClient('mainnet');
+    const {messages} = await client.getMessagesBySrcTxHash(transactionHash);
+    const {srcChainId, srcUaAddress, dstChainId, dstUaAddress, srcUaNonce} = messages[0];
+    console.log('message', messages);
+    const result = await fetch(`https://layerzeroscan.com/${srcChainId}/address/${srcUaAddress}/message/${dstChainId}/address/${dstUaAddress}/nonce/${srcUaNonce}`, {
+       mode: "no-cors",
+    }).then(res => {
+        console.log('res', res);
+    });
+    console.log('result', result);
 }

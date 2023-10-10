@@ -1,10 +1,11 @@
 import {Box, Table, TableBody, TableCell, TableHead, TableRow} from "@mui/material";
 import {SwapTokenInfoInterface} from "../interfaces/common.interface";
 import {useWalletConnect} from "../WalletConnectContext";
-import {crossChainSwapDeposit} from "../services/contract.service";
+import {approveERC20Token, crossChainSwapDeposit} from "../services/contract.service";
 import {ReactNode, useEffect, useState} from "react";
 import {ethers} from "ethers";
 import ERC20Abi from '../utils/erc20Abi.json';
+import {environment} from "../enviroments/environment";
 
 interface IProps {
     tokenList: SwapTokenInfoInterface[];
@@ -14,50 +15,95 @@ interface IProps {
 export default function TokenList({tokenList, networkId}: IProps) {
     const {userAddress, web3} = useWalletConnect();
     const [balanceObj, setBalanceObj] = useState<{[key: string]: string}>({});
+    const [approvedAmountObj, setApprovedAmountObj] = useState<{[key: string]: string}>({});
     useEffect(() => {
         if (!web3) {
            return;
         }
-        const balanceSourceList = [];
-        for (const item of tokenList) {
-            balanceSourceList.push(web3.eth.getBalance(item.address, 'latest').then(res => (
-                {
-                    address: item.address,
-                    origin: res,
-                   balance: ethers.formatUnits(res, item.decimals),
-                }
-            )));
-        }
-        Promise.all(balanceSourceList).then(res => {
-            console.log('origin', res);
-            const obj: {[key: string]: string} = {};
-            res.forEach(item => {
-                obj[item.address] = item.balance;
-            })
+
+
+        getTokenAmount().then(res => {
+            console.log('balance', res);
+            const obj: {[key: string]: string} = res?.reduce((acc, curr) => {
+               acc[curr.address] = curr.balance;
+               return acc;
+            }, {});
             setBalanceObj(obj);
         });
 
-        getTokenAmount().then();
+        getApprovedAmount().then(res => {
+            console.log('approve ', res);
+            const obj: {[key: string]: string} = res?.reduce((acc, curr) => {
+                acc[curr.address] = curr.amount;
+                return acc;
+            }, {});
+            setApprovedAmountObj(obj);
+        })
 
 
     }, [web3]);
+
+    const getApprovedAmount = async () => {
+        if (!web3) {
+            return;
+        }
+        const approvedSourceList: any[] = [];
+       for (const item of tokenList) {
+           if (item.address.indexOf('0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE') !== -1) {
+               continue;
+
+           }
+           const contract = new web3.eth.Contract(ERC20Abi,item.address);
+
+           // @ts-ignore
+           approvedSourceList.push(contract.methods.allowance(userAddress, environment.config.crossChainRouteAddress).call().then(res => ({
+               address: item.address,
+               origin: res,
+               // @ts-ignore
+               amount: ethers.formatUnits(res, item.decimals),
+           })))
+       }
+
+       return Promise.all(approvedSourceList);
+
+    };
+
+    const approve = async (tokenInfo: SwapTokenInfoInterface) => {
+        if (!web3 || !userAddress) {
+            return;
+        }
+
+        const res = await approveERC20Token(userAddress, web3, tokenInfo.address)
+        console.log('approve, res', res);
+
+
+    };
 
 
     const getTokenAmount = async () => {
         if (!web3 || !userAddress) {
             return;
         }
+        const balanceSourceList: any[] = [];
         for (const item of tokenList) {
             if (item.address.indexOf('0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE') !== -1) {
+                balanceSourceList.push(web3.eth.getBalance(userAddress, 'latest').then(res => ({
+                    address: item.address,
+                    origin: res,
+                    balance: ethers.formatUnits(res, item.decimals),
+                })));
                 continue;
             }
             const contract = new web3.eth.Contract(ERC20Abi,item.address);
-            console.log('ttt', userAddress, item.address);
             // @ts-ignore
-            const receipt = await contract.methods.balanceOf(userAddress).call();
-            // @ts-ignore
-            console.log('token', item.symbol, ethers.formatUnits(receipt, item.decimals),);
+            balanceSourceList.push(contract.methods.balanceOf(userAddress).call().then(res => ({
+                address: item.address,
+                origin: res,
+                // @ts-ignore
+                balance: ethers.formatUnits(res, item.decimals),
+            })));
         }
+        return Promise.all(balanceSourceList);
     }
     const swapDeposit = (tokenInfo: SwapTokenInfoInterface) => {
         if (!userAddress || !web3) {
@@ -88,12 +134,17 @@ export default function TokenList({tokenList, networkId}: IProps) {
                 <TableRow key={tokenInfo.address}>
                     <TableCell>
                         {tokenInfo.symbol}
-                    </TableCell>
-                    <TableCell>
+                        <br/>
                         {tokenInfo.address}
+
                     </TableCell>
                     <TableCell>
                         {(balanceObj && balanceObj[tokenInfo.address]) || '-'}
+                    </TableCell>
+                    <TableCell>
+                        {(approvedAmountObj && approvedAmountObj[tokenInfo.address]) || '-'}
+                        <br/>
+                        <button onClick={() => approve(tokenInfo)}>Approve</button>
                     </TableCell>
                     <TableCell>
                         <button onClick={() => swapDeposit(tokenInfo)}>Swap Deposit</button>
@@ -114,14 +165,14 @@ export default function TokenList({tokenList, networkId}: IProps) {
                 <TableHead>
                     <TableRow>
                         <TableCell>
-                            Token
+                            Token/ token address
                         </TableCell>
 
                         <TableCell>
-                            Token Address
+                            Amount
                         </TableCell>
                         <TableCell>
-                            Amount
+                            Approved Amount
                         </TableCell>
                         <TableCell>
                         </TableCell>

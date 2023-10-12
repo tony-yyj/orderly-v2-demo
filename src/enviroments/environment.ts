@@ -4,6 +4,10 @@ export const environment = {
         // swapSupportApiUrl: 'https://fi-api.woo.org',
         swapSupportApiUrl: 'https://woofi-api.mer1in.com',
         brokerId: 'woofi_dex',
-        crossChainRouteAddress: '0xC7498b7e7C9845b4B2556f2a4B7Cad2B7F2C0dC4',
+        // base
+        // crossChainRouteAddress: '0xCC96Ba33Eae1147BA8B0C73D3dd4cEe40d681EE9',
+        // arb
+        crossChainRouteAddress: '0x468f46137c1d1C5eb1414c2f9595732C2e383Dd8',
+
     },
 }

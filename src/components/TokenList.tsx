@@ -1,7 +1,7 @@
 import {Box, Table, TableBody, TableCell, TableHead, TableRow} from "@mui/material";
 import {SwapTokenInfoInterface} from "../interfaces/common.interface";
 import {useWalletConnect} from "../WalletConnectContext";
-import {approveERC20Token, crossChainSwapDeposit} from "../services/contract.service";
+import {approveERC20Token, crossChainSwapDeposit, singleChainDeposit} from "../services/contract.service";
 import {ReactNode, useEffect, useState} from "react";
 import {ethers} from "ethers";
 import ERC20Abi from '../utils/erc20Abi.json';
@@ -13,27 +13,29 @@ interface IProps {
 }
 
 export default function TokenList({tokenList, networkId}: IProps) {
+
+    const isArb = true;
     const {userAddress, web3} = useWalletConnect();
-    const [balanceObj, setBalanceObj] = useState<{[key: string]: string}>({});
-    const [approvedAmountObj, setApprovedAmountObj] = useState<{[key: string]: string}>({});
+    const [balanceObj, setBalanceObj] = useState<{ [key: string]: string }>({});
+    const [approvedAmountObj, setApprovedAmountObj] = useState<{ [key: string]: string }>({});
     useEffect(() => {
         if (!web3) {
-           return;
+            return;
         }
 
 
         getTokenAmount().then(res => {
             console.log('balance', res);
-            const obj: {[key: string]: string} = res?.reduce((acc, curr) => {
-               acc[curr.address] = curr.balance;
-               return acc;
+            const obj: { [key: string]: string } = res?.reduce((acc, curr) => {
+                acc[curr.address] = curr.balance;
+                return acc;
             }, {});
             setBalanceObj(obj);
         });
 
         getApprovedAmount().then(res => {
             console.log('approve ', res);
-            const obj: {[key: string]: string} = res?.reduce((acc, curr) => {
+            const obj: { [key: string]: string } = res?.reduce((acc, curr) => {
                 acc[curr.address] = curr.amount;
                 return acc;
             }, {});
@@ -48,23 +50,23 @@ export default function TokenList({tokenList, networkId}: IProps) {
             return;
         }
         const approvedSourceList: any[] = [];
-       for (const item of tokenList) {
-           if (item.address.indexOf('0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE') !== -1) {
-               continue;
+        for (const item of tokenList) {
+            if (item.address.indexOf('0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE') !== -1) {
+                continue;
 
-           }
-           const contract = new web3.eth.Contract(ERC20Abi,item.address);
+            }
+            const contract = new web3.eth.Contract(ERC20Abi, item.address);
 
-           // @ts-ignore
-           approvedSourceList.push(contract.methods.allowance(userAddress, environment.config.crossChainRouteAddress).call().then(res => ({
-               address: item.address,
-               origin: res,
-               // @ts-ignore
-               amount: ethers.formatUnits(res, item.decimals),
-           })))
-       }
+            // @ts-ignore
+            approvedSourceList.push(contract.methods.allowance(userAddress, environment.config.crossChainRouteAddress).call().then(res => ({
+                address: item.address,
+                origin: res,
+                // @ts-ignore
+                amount: ethers.formatUnits(res, item.decimals),
+            })))
+        }
 
-       return Promise.all(approvedSourceList);
+        return Promise.all(approvedSourceList);
 
     };
 
@@ -94,7 +96,7 @@ export default function TokenList({tokenList, networkId}: IProps) {
                 })));
                 continue;
             }
-            const contract = new web3.eth.Contract(ERC20Abi,item.address);
+            const contract = new web3.eth.Contract(ERC20Abi, item.address);
             // @ts-ignore
             balanceSourceList.push(contract.methods.balanceOf(userAddress).call().then(res => ({
                 address: item.address,
@@ -105,7 +107,7 @@ export default function TokenList({tokenList, networkId}: IProps) {
         }
         return Promise.all(balanceSourceList);
     }
-    const swapDeposit = (tokenInfo: SwapTokenInfoInterface) => {
+    const crossSwapDeposit = (tokenInfo: SwapTokenInfoInterface) => {
         if (!userAddress || !web3) {
             return;
         }
@@ -126,6 +128,30 @@ export default function TokenList({tokenList, networkId}: IProps) {
         }).then();
 
     };
+
+    const swapDeposit = (tokenInfo: SwapTokenInfoInterface) => {
+        if (!userAddress || !web3) {
+            return;
+        }
+        singleChainDeposit(
+            {
+                web3,
+                userAddress,
+                amount: '0.1',
+                slippage: '1',
+                src: {
+                    network: 'arbitrum',
+                    token: tokenInfo.address,
+                    decimal: tokenInfo.decimals.toString(),
+                },
+                dst: {
+                    network: 'arbitrum',
+                    token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+                }
+
+            }
+        ).then();
+    }
     const renderTableBody = () => {
         const rows: ReactNode[] = [];
 
@@ -147,7 +173,11 @@ export default function TokenList({tokenList, networkId}: IProps) {
                         <button onClick={() => approve(tokenInfo)}>Approve</button>
                     </TableCell>
                     <TableCell>
-                        <button onClick={() => swapDeposit(tokenInfo)}>Swap Deposit</button>
+                        {isArb ?
+                            <button onClick={() => swapDeposit(tokenInfo)}>Swap Deposit</button>
+                            :
+                            <button onClick={() => crossSwapDeposit(tokenInfo)}>Cross Swap Deposit</button>
+                        }
                     </TableCell>
                 </TableRow>
             )

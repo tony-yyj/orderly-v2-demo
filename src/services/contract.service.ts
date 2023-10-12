@@ -12,6 +12,55 @@ import {createClient, getMessagesBySrcTxHash} from "@layerzerolabs/scan-client";
 
 const GASLIMIT = '3000000';
 const TIME_OUT = 60 * 60 * 1000;
+
+export async function singleChainDeposit(
+    {
+        userAddress,
+        web3,
+        amount,
+        slippage,
+        src,
+        dst,
+    }: {
+        userAddress: string
+        web3: Web3,
+        amount: string,
+        slippage: string;
+        src: {
+            network: string;
+            token: string;
+            decimal: string;
+        },
+        dst: {
+            network: string;
+            token: string;
+        };
+    }
+) {
+
+
+    console.log('-- src', src, amount);
+    const fromAmount = ethers.parseUnits(amount, Number(src.decimal));
+
+    const queryParams = {
+        network: src.network,
+        from_token: src.token,
+        to_token: dst.token,
+        from_amount: fromAmount.toString(),
+        slippage: slippage,
+    };
+    const queryString = Object.entries(queryParams)
+        .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+        .join('&');
+    console.log(`queryString: ${queryString}`);
+
+
+    const url = `${environment.config.swapSupportApiUrl}/woofi_dex/swap?${queryString}`;
+    const priceData =  await fetch(url).then(response => response.json()) as CrossSwapResponseInterface;
+    console.log('price data', priceData);
+
+}
+
 export async function crossChainSwapDeposit(
     {
         userAddress,
